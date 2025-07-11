@@ -1,3 +1,5 @@
+# Modified section of streamlit_app.py for emoji display and animation
+
 import sys
 import os
 import time
@@ -32,6 +34,11 @@ if "emotion_counts" not in st.session_state:
     st.session_state.camera_on = False
     st.session_state.has_run_once = False
 
+# Emoji tracking state
+if "current_emoji" not in st.session_state:
+    st.session_state.current_emoji = None
+    st.session_state.last_emoji_change_time = time.time()
+
 # ---- UI CONTROLS ----
 st.title("Real-Time Emotion Detector")
 col1, col2, col3 = st.columns([0.5, 0.3, 0.2])
@@ -45,7 +52,6 @@ with col3:
     if st.button("Reset Stats"):
         st.session_state.emotion_counts = {e: 0 for e in emotion_labels}
         st.session_state.fps_log = []
-        # DO NOT reset emotion_log or has_run_once
 
 # ---- TABS ----
 if st.session_state.has_run_once or st.session_state.emotion_log:
@@ -93,10 +99,18 @@ with tab1:
                 cv2.putText(frame_rgb, emotion, (x, y - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-            if top_emotion and top_emotion in emojis:
-                emoji_img = emojis[top_emotion].resize((64, 64))
-                animated = ImageEnhance.Brightness(emoji_img).enhance(1.1 + 0.1 * np.sin(time.time() * 3))
-                frame_pil.paste(animated, (10, 10), animated)
+            # Update emoji state if emotion changed
+            if top_emotion and top_emotion in emojis and top_emotion != st.session_state.current_emoji:
+                st.session_state.current_emoji = top_emotion
+                st.session_state.last_emoji_change_time = time.time()
+
+            # Animate emoji (pulse)
+            if st.session_state.current_emoji in emojis:
+                pulse = 0.6 + 0.4 * np.sin(time.time() * 3)
+                base_emoji = emojis[st.session_state.current_emoji].resize((64, 64))
+                enhancer = ImageEnhance.Brightness(base_emoji)
+                faded_emoji = enhancer.enhance(pulse)
+                frame_pil.paste(faded_emoji, (10, 10), faded_emoji)
 
             FRAME_WINDOW.image(np.array(frame_pil))
 
@@ -122,45 +136,3 @@ with tab1:
         camera.release()
         st.session_state.has_run_once = True
 
-# -------- TAB 2: VISUALIZER --------
-if 'tab2' in locals():
-    with tab2:
-        st.subheader("Emotion Count Overview")
-        colA, colB = st.columns(2)
-
-        with colA:
-            df_bar = pd.DataFrame.from_dict(
-                st.session_state.emotion_counts, orient='index', columns=['Count']
-            )
-            fig_bar, ax_bar = plt.subplots()
-            df_bar.plot(kind='bar', legend=False, ax=ax_bar, color='lightskyblue')
-            ax_bar.set_title("Total Emotion Count")
-            plt.xticks(rotation=45)
-            st.pyplot(fig_bar)
-
-        with colB:
-            if st.session_state.emotion_log:
-                df_log = pd.DataFrame(st.session_state.emotion_log)
-                df_line = df_log.groupby(['timestamp', 'emotion']).size().unstack().fillna(0).cumsum()
-                fig_line, ax_line = plt.subplots()
-                df_line.plot(ax=ax_line, linewidth=2)
-                ax_line.set_title("Emotion Over Time")
-                ax_line.set_ylabel("Cumulative Count")
-                plt.xticks(rotation=45)
-                st.pyplot(fig_line)
-            else:
-                st.info("Waiting for detection to begin...")
-
-        st.divider()
-        st.subheader("Performance Metrics")
-        total_detected = sum(st.session_state.emotion_counts.values())
-        avg_fps = np.mean(st.session_state.fps_log) if st.session_state.fps_log else 0.0
-        st.markdown(f"- **Total Detections:** {total_detected}")
-        st.markdown(f"- **Average FPS:** {avg_fps:.2f}")
-
-        if st.session_state.emotion_log:
-            os.makedirs("logs", exist_ok=True)
-            df = pd.DataFrame(st.session_state.emotion_log)
-            log_file = f"logs/emotion_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-            df.to_csv(log_file, index=False)
-            st.success(f"Log saved to {log_file}")
