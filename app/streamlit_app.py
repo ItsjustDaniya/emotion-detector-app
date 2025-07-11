@@ -135,4 +135,45 @@ with tab1:
 
         camera.release()
         st.session_state.has_run_once = True
+# -------- TAB 2: VISUALIZER --------
+if 'tab2' in locals():
+    with tab2:
+        st.subheader("Emotion Count Overview")
+        colA, colB = st.columns(2)
 
+        with colA:
+            df_bar = pd.DataFrame.from_dict(
+                st.session_state.emotion_counts, orient='index', columns=['Count']
+            )
+            fig_bar, ax_bar = plt.subplots()
+            df_bar.plot(kind='bar', legend=False, ax=ax_bar, color='lightskyblue')
+            ax_bar.set_title("Total Emotion Count")
+            plt.xticks(rotation=45)
+            st.pyplot(fig_bar)
+
+        with colB:
+            if st.session_state.emotion_log:
+                df_log = pd.DataFrame(st.session_state.emotion_log)
+                df_line = df_log.groupby(['timestamp', 'emotion']).size().unstack().fillna(0).cumsum()
+                fig_line, ax_line = plt.subplots()
+                df_line.plot(ax=ax_line, linewidth=2)
+                ax_line.set_title("Emotion Over Time")
+                ax_line.set_ylabel("Cumulative Count")
+                plt.xticks(rotation=45)
+                st.pyplot(fig_line)
+            else:
+                st.info("Waiting for detection to begin...")
+
+        st.divider()
+        st.subheader("Performance Metrics")
+        total_detected = sum(st.session_state.emotion_counts.values())
+        avg_fps = np.mean(st.session_state.fps_log) if st.session_state.fps_log else 0.0
+        st.markdown(f"- **Total Detections:** {total_detected}")
+        st.markdown(f"- **Average FPS:** {avg_fps:.2f}")
+
+        if st.session_state.emotion_log:
+            os.makedirs("logs", exist_ok=True)
+            df = pd.DataFrame(st.session_state.emotion_log)
+            log_file = f"logs/emotion_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            df.to_csv(log_file, index=False)
+            st.success(f"Log saved to {log_file}")
