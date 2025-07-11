@@ -1,0 +1,88 @@
+HOW TO TRAIN AND RUN THE REAL-TIME EMOTION DETECTOR
+====================================================
+
+ STEP 1: SET UP THE ENVIRONMENT
+----------------------------------
+1. Install Python 3.8 or above.
+2. Navigate to the project root directory.
+3. Install required packages:
+
+   pip install -r requirements.txt
+
+
+ STEP 2: DATASET FOR TRAINING
+-------------------------------
+Use a labeled dataset like FER-2013 (7 classes: Angry, Disgust, Fear, Happy, Sad, Surprise, Neutral).
+
+Folder structure should look like:
+
+   dataset/
+   ├── train/
+   │   ├── angry/
+   │   ├── happy/
+   │   └── ...
+   └── test/
+       ├── angry/
+       ├── happy/
+       └── ...
+
+Images must be grayscale 48x48 or will be resized during preprocessing.
+
+
+ STEP 3: TRAIN THE MODEL
+---------------------------
+1. Place `train_model.py` in your root folder (ask ChatGPT to generate this script if not provided).
+2. Run the script:
+
+   python train_model.py
+
+3. After training completes, you’ll get:
+
+   model/emotion_model.h5
+
+
+ STEP 4: PLACE YOUR EMOJIS
+-----------------------------
+1. Add transparent PNGs to the `emojis/` folder.
+2. Name them exactly as:
+
+   - angry.png
+   - disgust.png
+   - fear.png
+   - happy.png
+   - sad.png
+   - surprise.png
+   - neutral.png
+
+
+ STEP 5: RUN THE STREAMLIT APP
+--------------------------------
+From the root folder, run:
+
+   streamlit run app/streamlit_app.py
+
+
+ STEP 6: USE THE APP
+-----------------------
+- Use the toggle to start/stop camera.
+- See live emotion detection.
+- Watch real-time bar chart and emoji change.
+- Click "Capture Snapshot" to save a frame.
+- Every 10 seconds, the most frequent emotion is displayed.
+- All detections are logged in a CSV file inside `/logs/`.
+
+
+ GENERATED FOLDERS:
+----------------------
+- `logs/`        → CSV log files for emotions
+- `snapshots/`   → Webcam snapshots
+
+
+ TROUBLESHOOTING:
+--------------------
+ Model not found? Make sure `emotion_model.h5` exists in `/model/`.
+ Emojis not transparent? Convert to PNG with alpha channel using tools like Photopea or Photoshop.
+ Webcam not detected? Close other camera apps and retry.
+
+
+

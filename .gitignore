@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+model/
+logs/
+snapshots/
+*.h5
+*.csv
+.DS_Store
+.vscode/
